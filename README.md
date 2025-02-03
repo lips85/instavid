@@ -1,36 +1,127 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# InstaVid: AI-Powered Video Content Generator
 
-## Getting Started
+InstaVid는 텍스트 입력만으로 전문적인 숏폼 비디오를 자동으로 생성하는 AI 기반 도구입니다.
 
-First, run the development server:
+## 주요 기능
+
+### 1. AI 스크립트 생성
+
+- 주제 입력만으로 전문적인 스크립트 자동 생성
+- GPT-4 기반의 자연스러운 내러티브 구성
+
+### 2. 음성 합성
+
+- 다양한 AI 보이스 옵션 제공
+- 자연스러운 음성 톤과 억양 구현
+- 실시간 음성 미리듣기 기능
+
+### 3. 자동 자막 생성
+
+- 음성 인식을 통한 정확한 자막 생성
+- 타임라인 자동 동기화
+- 가독성 높은 자막 스타일링
+
+### 4. AI 이미지 생성
+
+- 스크립트 기반 장면별 이미지 자동 생성
+- 고품질 이미지 생성 (1024x1024)
+- 네거티브 프롬프트를 통한 품질 제어
+
+### 5. 비디오 편집 자동화
+
+- 이미지 전환 효과 자동 적용
+  - 줌인/줌아웃 효과
+  - 패닝 효과
+- 배경 음악 자동 믹싱
+- 자막 애니메이션 효과
+
+### 6. YouTube 메타데이터 생성
+
+- AI 기반 제목 최적화
+- 설명 및 태그 자동 생성
+- SEO 최적화 지원
+
+## 기술 스택
+
+### Frontend
+
+- Next.js 14
+- TypeScript
+- TailwindCSS
+- ShadcnUI
+- React
+
+### Backend
+
+- FastAPI
+- Python
+- MoviePy
+- OpenCV
+- NumPy
+
+### AI/ML
+
+- GPT-4
+- Flux
+- Whisper ASR
+
+### 클라우드 서비스
+
+- AWS S3
+- CloudFront
+
+## 설치 방법
+
+1. 저장소 클론
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/newtonjw/instavid.git
+cd instavid
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. 프론트엔드 설정
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm install
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+3. 백엔드 설정
 
-## Learn More
+```bash
+cd backend
+pip install -r requirements.txt
+```
 
-To learn more about Next.js, take a look at the following resources:
+4. 환경 변수 설정
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+# Frontend (.env)
+OPENAI_API_KEY=your_key
+AWS_ACCESS_KEY_ID=your_key
+AWS_SECRET_ACCESS_KEY=your_key
+AWS_REGION=your_region
+AWS_BUCKET_NAME=your_bucket
+CLOUDFRONT_URL=your_url
+FASTAPI_URL=http://localhost:8001
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# Backend (.env)
+AWS_ACCESS_KEY_ID=your_key
+AWS_SECRET_ACCESS_KEY=your_key
+AWS_REGION=your_region
+AWS_BUCKET_NAME=your_bucket
+OPENAI_API_KEY=your_key
+```
 
-## Deploy on Vercel
+5. 실행
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+# Frontend
+npm run dev
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# Backend
+python run.py
+```
+
+## 라이선스
+
+MIT License
