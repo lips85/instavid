@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import {
     Select,
@@ -15,16 +15,29 @@ interface IMusicItem {
     url: string;
 }
 
-export default function MusicSelector() {
+interface MusicSelectorProps {
+    show: boolean;  // 이미지 생성 후 표시 여부를 제어하기 위한 prop
+    onMusicSelect?: (url: string) => void;  // 콜백 추가
+}
+
+export default function MusicSelector({ show, onMusicSelect }: MusicSelectorProps) {
     const [musicList, setMusicList] = useState<IMusicItem[]>([]);
     const [selectedMusic, setSelectedMusic] = useState<string>('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
-    const [audioUrl, setAudioUrl] = useState<string>('');
+    const audioRef = useRef<HTMLAudioElement>(null);
 
     useEffect(() => {
         fetchMusicList();
     }, []);
+
+    // 선택된 음악이 변경될 때마다 오디오 업데이트
+    useEffect(() => {
+        if (audioRef.current && selectedMusic) {
+            audioRef.current.load();  // 오디오 리로드
+            audioRef.current.play();  // 자동 재생
+        }
+    }, [selectedMusic]);
 
     const fetchMusicList = async () => {
         try {
@@ -47,10 +60,7 @@ export default function MusicSelector() {
 
     const handleMusicSelect = (value: string) => {
         setSelectedMusic(value);
-        const selectedItem = musicList.find(item => item.url === value);
-        if (selectedItem) {
-            setAudioUrl(selectedItem.url);
-        }
+        onMusicSelect?.(value);  // 부모 컴포넌트에 선택된 음악 URL 전달
     };
 
     const handleRandomSelect = () => {
@@ -58,15 +68,16 @@ export default function MusicSelector() {
         const randomMusic = musicList[randomIndex];
         if (randomMusic) {
             setSelectedMusic(randomMusic.url);
-            setAudioUrl(randomMusic.url);
         }
     };
+
+    if (!show) return null;  // 이미지 생성 전에는 컴포넌트를 렌더링하지 않음
 
     return (
         <div className="space-y-4 mt-8 border-t pt-8">
             <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-semibold">Step 4: Select Background Music</h3>
+                    <h2 className="text-lg font-semibold">Step 6: Select Background Music</h2>
                     <Button 
                         onClick={handleRandomSelect}
                         disabled={isLoading || !musicList.length}
@@ -101,16 +112,17 @@ export default function MusicSelector() {
                 <div className="text-red-500 text-sm">{error}</div>
             )}
 
-            {audioUrl && (
+            {selectedMusic && (
                 <div className="space-y-2">
                     <h4 className="font-medium">Preview:</h4>
                     <audio 
+                        ref={audioRef}
                         controls 
                         className="w-full"
                         preload="metadata"
                         crossOrigin="anonymous"
                     >
-                        <source src={audioUrl} type="audio/mpeg" />
+                        <source src={selectedMusic} type="audio/mpeg" />
                         Your browser does not support the audio element.
                     </audio>
                 </div>

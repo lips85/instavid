@@ -10,20 +10,21 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { IVoiceOption } from '@/types';
+import { IVoiceOption, ISubtitleGroup } from '@/types';
 import SubtitleGenerator from './SubtitleGenerator';
 import { generateProjectId } from '@/utils/project';
+import PromptGenerator from './PromptGenerator';
 
 // 음성 옵션 데이터 업데이트
 const VOICE_OPTIONS: IVoiceOption[] = [
   { 
-    id: 'XB0fDUnXU5powFXDhCwa', 
+    id: 'N2lVS1w4EtoT3dr4eOWO', 
     name: 'Callum', 
     preview_url: '',
     description: 'Characters, Transatlantic - Perfect for storytelling and character voices'
   },
   { 
-    id: 'ThT5KcBeYPX3keUQqHPh', 
+    id: 'XB0fDUnXU5powFXDhCwa', 
     name: 'Charlotte', 
     preview_url: '',
     description: 'Characters, Swedish - Ideal for Nordic character narratives'
@@ -53,6 +54,7 @@ export default function VoiceGenerator({ script }: VoiceGeneratorProps) {
   const [error, setError] = useState('');
   const [generatedAudios, setGeneratedAudios] = useState<Array<{url: string, timestamp: number, projectId: string}>>([]);
   const [selectedAudioUrl, setSelectedAudioUrl] = useState<string>('');
+  const [subtitles, setSubtitles] = useState<ISubtitleGroup[]>([]);
 
   const generateVoice = async () => {
     if (!selectedVoice) {
@@ -114,7 +116,7 @@ export default function VoiceGenerator({ script }: VoiceGeneratorProps) {
   return (
     <div className="space-y-4 mt-8">
       <div className="space-y-2">
-        <h3 className="text-lg font-semibold">Voice Selection</h3>
+        <h2 className="text-2xl font-bold mb-4">Step 2: Generate Voice</h2>
         <Select
           value={selectedVoice}
           onValueChange={setSelectedVoice}
@@ -193,7 +195,18 @@ export default function VoiceGenerator({ script }: VoiceGeneratorProps) {
       )}
 
       {selectedAudioUrl && (
-        <SubtitleGenerator audioUrl={selectedAudioUrl} />
+        <>
+          <SubtitleGenerator 
+            audioUrl={selectedAudioUrl} 
+            onSubtitlesGenerated={setSubtitles}
+          />
+          {subtitles.length > 0 && (
+            <PromptGenerator 
+              subtitles={subtitles} 
+              audioUrl={selectedAudioUrl}
+            />
+          )}
+        </>
       )}
     </div>
   );

@@ -1,0 +1,17 @@
+fastapi==0.104.1
+uvicorn==0.24.0
+python-multipart==0.0.6
+moviepy==1.0.3
+boto3==1.29.3
+python-dotenv==1.0.0
+requests==2.31.0
+pydantic==2.5.1
+numpy==1.26.2
+Pillow>=8.3.2,<10.1.0
+decorator==4.4.2
+imageio>=2.33.0
+imageio-ffmpeg>=0.4.9
+proglog==0.1.10
+tqdm>=4.66.1
+Wand==0.6.11
+scikit-image>=0.24.0 

@@ -8,9 +8,10 @@ import ImageGenerator from '@/components/ImageGenerator';
 
 interface PromptGeneratorProps {
   subtitles: ISubtitleGroup[];
+  audioUrl: string;
 }
 
-export default function PromptGenerator({ subtitles }: PromptGeneratorProps) {
+export default function PromptGenerator({ subtitles, audioUrl }: PromptGeneratorProps) {
   const [prompts, setPrompts] = useState<IImagePrompt[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -59,7 +60,7 @@ export default function PromptGenerator({ subtitles }: PromptGeneratorProps) {
   return (
     <div className="space-y-4 mt-8">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Image Prompts</h3>
+        <h2 className="text-2xl font-bold mb-4">Step 4: Generate Image Prompts</h2>
         <Button
           onClick={generatePrompts}
           disabled={isLoading || !subtitles.length}
@@ -102,7 +103,11 @@ export default function PromptGenerator({ subtitles }: PromptGeneratorProps) {
               ))}
             </div>
           </div>
-          <ImageGenerator prompts={prompts} />
+          <ImageGenerator 
+            prompts={prompts} 
+            audioUrl={audioUrl}
+            subtitles={subtitles}
+          />
         </>
       )}
     </div>

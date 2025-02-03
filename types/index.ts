@@ -60,4 +60,26 @@ export interface IImagePrompt {
 export interface IImagePromptResponse {
     prompts: IImagePrompt[];
     error?: string;
+}
+
+export interface IVideoGenerationRequest {
+    images: string[];
+    audio: string;
+    subtitles: ISubtitleGroup[];
+    backgroundMusic: string;
+    projectId: string;
+}
+
+export interface IVideoGenerationResponse {
+    videoUrl: string;
+    error?: string;
+}
+
+export interface IYoutubeMetadata {
+    title: string;
+    description: string;
+}
+
+export interface IYoutubeMetadataRequest {
+    script: string;
 } 

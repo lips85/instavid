@@ -50,7 +50,7 @@ export default function ScriptGenerator() {
   return (
     <div className="w-full max-w-2xl mx-auto space-y-4 p-4">
       <div className="space-y-2">
-        <h2 className="text-2xl font-bold">AI Script Generator</h2>
+        <h2 className="text-2xl font-bold">Step 1: AI Script Generator</h2>
         <p className="text-gray-500">
           Enter a video topic and let AI generate a script automatically.
         </p>

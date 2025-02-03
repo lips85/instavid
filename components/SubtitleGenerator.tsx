@@ -4,13 +4,16 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ISubtitleGroup } from '@/types';
-import PromptGenerator from './PromptGenerator';
 
 interface SubtitleGeneratorProps {
   audioUrl: string;
+  onSubtitlesGenerated: (subtitles: ISubtitleGroup[]) => void;
 }
 
-export default function SubtitleGenerator({ audioUrl }: SubtitleGeneratorProps) {
+export default function SubtitleGenerator({ 
+  audioUrl, 
+  onSubtitlesGenerated 
+}: SubtitleGeneratorProps) {
   const [subtitles, setSubtitles] = useState<ISubtitleGroup[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -44,7 +47,9 @@ export default function SubtitleGenerator({ audioUrl }: SubtitleGeneratorProps) 
         throw new Error(data.error);
       }
 
-      setSubtitles(data.json.groups);
+      const newSubtitles = data.json.groups;
+      setSubtitles(newSubtitles);
+      onSubtitlesGenerated(newSubtitles);
     } catch (err) {
       console.error('Subtitle generation error:', err);
       setError('An error occurred while generating subtitles.');
@@ -61,6 +66,8 @@ export default function SubtitleGenerator({ audioUrl }: SubtitleGeneratorProps) 
 
   return (
     <div className="space-y-4 mt-8">
+      <h2 className="text-2xl font-bold">Step 3: Generate Subtitles</h2>
+      
       <Button
         onClick={generateSubtitles}
         disabled={isLoading}
@@ -80,25 +87,19 @@ export default function SubtitleGenerator({ audioUrl }: SubtitleGeneratorProps) 
       )}
 
       {subtitles.length > 0 && (
-        <>
-          <div className="space-y-4">
-            <h4 className="font-medium">Generated Subtitles:</h4>
-            <div className="space-y-2">
-              {subtitles.map((group) => (
-                <div 
-                  key={group.index}
-                  className="p-3 bg-gray-50 rounded-lg"
-                >
-                  <div className="text-sm text-gray-500 mb-1">
-                    {formatTime(group.start)} - {formatTime(group.end)}
-                  </div>
-                  <p>{group.text}</p>
-                </div>
-              ))}
+        <div className="space-y-2">
+          {subtitles.map((group) => (
+            <div 
+              key={group.index}
+              className="p-3 bg-gray-50 rounded-lg"
+            >
+              <div className="text-sm text-gray-500 mb-1">
+                {formatTime(group.start)} - {formatTime(group.end)}
+              </div>
+              <p>{group.text}</p>
             </div>
-          </div>
-          <PromptGenerator subtitles={subtitles} />
-        </>
+          ))}
+        </div>
       )}
     </div>
   );
