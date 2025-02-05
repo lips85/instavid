@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { ISubtitleRequest } from '@/types';
+import path from 'path';
+import fs from 'fs/promises';
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
+
+// public 폴더 내에 outputs 디렉토리 사용
+const OUTPUT_DIR = path.join(process.cwd(), 'public');
 
 export async function POST(req: Request) {
     try {
@@ -12,18 +17,15 @@ export async function POST(req: Request) {
 
         if (!audioUrl) {
             return NextResponse.json(
-                { error: 'Audio URL is required.' },
+                { error: '오디오 URL이 필요합니다.' },
                 { status: 400 }
             );
         }
 
-        // S3 URL에서 오디오 파일 다운로드
-        const audioResponse = await fetch(audioUrl);
-        if (!audioResponse.ok) {
-            throw new Error('Failed to fetch audio file from S3');
-        }
+        // 파일 시스템에서 직접 오디오 파일 읽기
+        const audioPath = path.join(OUTPUT_DIR, audioUrl);
+        const audioBuffer = await fs.readFile(audioPath);
 
-        const audioBuffer = await audioResponse.arrayBuffer();
         const file = new File([audioBuffer], 'audio.mp3', { type: 'audio/mpeg' });
 
         const formData = new FormData();
@@ -41,12 +43,12 @@ export async function POST(req: Request) {
         });
 
         if (!response.ok) {
-            throw new Error(`Whisper API error: ${response.statusText}`);
+            throw new Error(`Whisper API 오류: ${response.statusText}`);
         }
 
         const rawResult = await response.json();
 
-        // n8n 로직과 동일하게 구현
+        // 자막 그룹화 처리
         const words = rawResult.words || [];
         const result = [];
 
@@ -92,9 +94,9 @@ export async function POST(req: Request) {
         });
 
     } catch (error: any) {
-        console.error('Subtitle generation error:', error);
+        console.error('자막 생성 오류:', error);
         return NextResponse.json(
-            { error: error.message || 'An error occurred while generating subtitles.' },
+            { error: error.message || '자막 생성 중 오류가 발생했습니다.' },
             { status: 500 }
         );
     }

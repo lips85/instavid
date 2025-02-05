@@ -29,7 +29,7 @@ InstaVid는 **Next.js 기반의 웹 애플리케이션**과 **FastAPI 기반의 
   - **보이스 생성 API**: ElevenLabs API 활용
   - **이미지 생성 API**: 초기에는 FLUX AI 사용, 이후 ComfyUI 기반으로 변경
   - **비디오 합성 API**: MoviePy 기반 비디오 생성
-  - **파일 저장 API**: Amazon S3 활용
+  - **파일 저장 API**: 메인 컴퓨터에 저장 (저장위치 path=D:\code\shorts_output)
 
 ---
 
@@ -42,7 +42,7 @@ InstaVid는 **Next.js 기반의 웹 애플리케이션**과 **FastAPI 기반의 
 5. **배경음악 적용**
    - 사용자가 직접 업로드
    - 유튜브 공개 음악 선택 가능
-6. **비디오 합성 및 저장** (MoviePy, Amazon S3)
+6. **비디오 합성 및 저장** (MoviePy, path= D:\code\shorts_output)
 7. **완성된 영상 다운로드**
 
 ### 2.1 추후 추가 기능 (MVP 이후 개발)
@@ -68,7 +68,7 @@ InstaVid는 **Next.js 기반의 웹 애플리케이션**과 **FastAPI 기반의 
 ### Step 3: 보이스오버 생성
 
 - ElevenLabs API를 호출하여 **AI 음성 생성**
-- 오디오 파일을 Amazon S3에 업로드
+- 생성된 오디오 파일을 로컬 저장소(D:\code\shorts_output\audio)에 저장
 
 ### Step 4: 싱크 분석 및 자막 생성
 
@@ -87,7 +87,7 @@ InstaVid는 **Next.js 기반의 웹 애플리케이션**과 **FastAPI 기반의 
 ### Step 7: 비디오 합성
 
 - MoviePy 기반 비디오 생성 API를 호출하여 **오디오, 이미지, 배경음악을 조합**
-- 최종 영상은 Amazon S3에 저장
+- 최종 영상은 로컬 저장소(D:\code\shorts_output\videos)에 저장
 
 ### Step 8: 다운로드
 
@@ -105,7 +105,13 @@ InstaVid는 **Next.js 기반의 웹 애플리케이션**과 **FastAPI 기반의 
 | **이미지 생성**               | 초기에는 FLUX AI, 이후 ComfyUI 기반 로컬 실행 모델로 변경 | 어려움          | 상           |
 | **배경음악 선택**             | 유튜브 공개 음악 선택 or 사용자 업로드                    | 어려움          | 중           |
 | **비디오 합성**               | MoviePy 기반으로 비디오 합성 및 편집                      | 어려움          | 상           |
-| **Amazon S3 저장소 연동**     | 생성된 리소스를 S3에 저장 및 관리                         | 보통            | 상           |
+| **파일 저장**                 | 로컬 저장소에 파일 저장 및 관리                           | 쉬움            | 상           |
+
+### 2.1 추후 추가 기능 (MVP 이후 개발)
+
+1. **사용자 인증 (Supabase Auth)**
+2. **사용자별 데이터 저장 (Supabase Database)**
+3. **SNS 공유 기능 (유튜브/틱톡 업로드 지원)**
 
 ---
 
@@ -115,7 +121,6 @@ InstaVid는 **Next.js 기반의 웹 애플리케이션**과 **FastAPI 기반의 
 | --------------- | ------------------------------------------------ |
 | **프론트엔드**  | Next.js (API 호출 및 UI 구현)                    |
 | **백엔드 API**  | FastAPI (각 AI 기능을 개별 API로 제공)           |
-| **파일 저장**   | Amazon S3 (영상, 오디오, 이미지 저장)            |
 | **AI 모델**     | OpenAI API (GPT-4, Whisper), ElevenLabs, FLUX AI |
 | **비디오 처리** | MoviePy (Python 기반 비디오 합성)                |
 
@@ -130,15 +135,15 @@ InstaVid는 **Next.js 기반의 웹 애플리케이션**과 **FastAPI 기반의 
 
 ## 6. API 연동 정리
 
-| **API**               | **사용 목적**                        |
-| --------------------- | ------------------------------------ |
-| **스크립트 생성 API** | GPT-4 기반 텍스트 생성               |
-| **보이스 생성 API**   | ElevenLabs API를 활용한 음성 생성    |
-| **싱크 분석 API**     | OpenAI Whisper 기반 오디오 싱크 분석 |
-| **이미지 생성 API**   | FLUX AI → 이후 ComfyUI 기반 변경     |
-| **비디오 합성 API**   | MoviePy 기반으로 비디오 생성 및 편집 |
-| **파일 저장 API**     | Amazon S3에 영상 및 리소스 저장      |
-| **유튜브 음악 API**   | 공개 음악 검색 및 선택 지원 (예정)   |
+| **API**               | **사용 목적**                                                |
+| --------------------- | ---------------------------------------------------------- |
+| **스크립트 생성 API** | GPT-4 기반 텍스트 생성                                      |
+| **보이스 생성 API**   | ElevenLabs API를 활용한 음성 생성                           |
+| **싱크 분석 API**     | OpenAI Whisper 기반 오디오 싱크 분석                        |
+| **이미지 생성 API**   | FLUX AI → 이후 ComfyUI 기반 변경                            |
+| **비디오 합성 API**   | MoviePy 기반으로 비디오 생성 및 편집                        |
+| **파일 저장 API**     | 로컬 저장소 관리 (D:\code\shorts_output)                    |
+| **유튜브 음악 API**   | 공개 음악 검색 및 선택 지원 (예정)                          |
 
 ---
 
@@ -156,8 +161,8 @@ InstaVid는 **Next.js 기반의 웹 애플리케이션**과 **FastAPI 기반의 
 
 **InstaVid는 Next.js + FastAPI 기반의 AI 자동 비디오 생성 플랫폼**이다.
 
-- MVP에서는 **FLUX AI, ElevenLabs, OpenAI API를 활용한 클라우드 기반**으로 구축
-- 이후 **이미지 생성 기능을 ComfyUI 기반 로컬 모델로 변경**하여 비용 절감 및 성능 최적화
+- MVP에서는 **FLUX AI, ElevenLabs, OpenAI API를 활용해 로컬**로 구축
+- 모든 파일은 로컬 저장소(D:\code\shorts_output)에 저장되어 관리
 - **각 기능을 개별 API로 분리하여 유지보수성과 확장성을 극대화**
 
 🚀 **1단계: MVP 출시 → 2단계: ComfyUI 기반 로컬 모델 적용 → 3단계: SNS 공유 기능 확장**

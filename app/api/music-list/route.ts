@@ -1,65 +1,53 @@
 import { NextResponse } from 'next/server';
-import { S3Client, ListObjectsV2Command } from '@aws-sdk/client-s3';
+import { readdir } from 'fs/promises';
+import path from 'path';
 
-const s3Client = new S3Client({
-    region: process.env.AWS_REGION!,
-    credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-    },
-});
+interface IMusicInfo {
+    fileName: string;
+    displayName: string;
+    url: string;
+}
 
-// 우선순위 음악 목록
-const PRIORITY_MUSIC = [
-    "Battle Of The Beast - The Soundings",
-    "Between The Spaces - The Soundlings",
-    "Keep Climbing - The Soundings",
-    "Keys To Unravel",
-    "Shady Guise - The Soundlings"
-];
+// 음악 파일 표시 이름 매핑
+const MUSIC_DISPLAY_NAMES: Record<string, string> = {
+    'vlog': '밝고 경쾌한 브이로그 배경음악',
+    'alone': '감성적인 피아노 솔로'
+};
+
+// public 폴더 내의 음악 디렉토리 경로
+const MUSIC_DIR = path.join(process.cwd(), 'public', 'music');
 
 export async function GET() {
     try {
-        const command = new ListObjectsV2Command({
-            Bucket: process.env.AWS_BUCKET_NAME!,
-            Prefix: 'background/',  // background 폴더 내의 파일만 조회
-        });
-
-        const response = await s3Client.send(command);
-
-        if (!response.Contents) {
+        // 디렉토리가 없는 경우 빈 배열 반환
+        try {
+            await readdir(MUSIC_DIR);
+        } catch {
             return NextResponse.json({ musicList: [] });
         }
 
-        // MP3 파일만 필터링하고 파일명 추출
-        const allMusic = response.Contents
-            .filter(item => item.Key?.endsWith('.mp3'))
-            .map(item => {
-                const fileName = item.Key?.split('/').pop()?.replace('.mp3', '') || '';
-                const url = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${item.Key}`;
-                return { fileName, url };
-            });
+        // 디렉토리 내의 모든 파일 읽기
+        const files = await readdir(MUSIC_DIR);
 
-        // 우선순위 음악과 나머지 음악 분리
-        const priorityMusic = allMusic.filter(music =>
-            PRIORITY_MUSIC.includes(music.fileName)
-        ).sort((a, b) =>
-            PRIORITY_MUSIC.indexOf(a.fileName) - PRIORITY_MUSIC.indexOf(b.fileName)
-        );
-
-        const otherMusic = allMusic
-            .filter(music => !PRIORITY_MUSIC.includes(music.fileName))
-            .sort((a, b) => a.fileName.localeCompare(b.fileName));
-
-        // 우선순위 음악을 앞에 두고 나머지는 알파벳 순으로 정렬
-        const musicList = [...priorityMusic, ...otherMusic];
+        // MP3 파일만 필터링하고 정보 추출
+        const musicList: IMusicInfo[] = files
+            .filter(file => file.endsWith('.mp3'))
+            .map(file => {
+                const fileName = file.replace('.mp3', '');
+                return {
+                    fileName,
+                    displayName: MUSIC_DISPLAY_NAMES[fileName] || fileName,
+                    url: `/music/${file}`
+                };
+            })
+            .sort((a, b) => a.displayName.localeCompare(b.displayName));
 
         return NextResponse.json({ musicList });
 
     } catch (error) {
-        console.error('Error fetching music list:', error);
+        console.error('음악 목록 조회 오류:', error);
         return NextResponse.json(
-            { error: 'Failed to fetch music list' },
+            { error: '음악 목록을 가져오는데 실패했습니다.' },
             { status: 500 }
         );
     }

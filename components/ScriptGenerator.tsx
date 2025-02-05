@@ -22,7 +22,7 @@ export default function ScriptGenerator() {
     try {
       setIsLoading(true);
       setError('');
-      
+
       const response = await fetch('/api/generate-script', {
         method: 'POST',
         headers: {
@@ -63,8 +63,8 @@ export default function ScriptGenerator() {
           onChange={(e) => setTopic(e.target.value)}
           disabled={isLoading}
         />
-        <Button 
-          onClick={generateScript} 
+        <Button
+          onClick={generateScript}
           disabled={isLoading}
         >
           {isLoading ? 'Generating...' : 'Generate Script'}

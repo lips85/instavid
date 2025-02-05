@@ -1,20 +1,15 @@
 import { NextResponse } from 'next/server';
-import { IVoiceRequest } from '@/types';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-
-const s3Client = new S3Client({
-    region: process.env.AWS_REGION!,
-    credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-    },
-});
+import { writeFile, mkdir } from 'fs/promises';
+import path from 'path';
 
 interface IVoiceRequest {
     text: string;
     voiceId: string;
-    projectId: string;  // projectId 추가
+    projectId: string;
 }
+
+// public 폴더 내에 outputs 디렉토리 사용
+const OUTPUT_DIR = path.join(process.cwd(), 'public', 'outputs');
 
 export async function POST(req: Request) {
     try {
@@ -22,11 +17,12 @@ export async function POST(req: Request) {
 
         if (!text || !voiceId) {
             return NextResponse.json(
-                { error: 'Text and voice selection are required.' },
+                { error: '텍스트와 음성을 선택해주세요.' },
                 { status: 400 }
             );
         }
 
+        // ElevenLabs API를 사용하여 음성 생성
         const response = await fetch(
             `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
             {
@@ -47,35 +43,33 @@ export async function POST(req: Request) {
         );
 
         if (!response.ok) {
-            throw new Error('Voice generation failed');
+            throw new Error('음성 생성에 실패했습니다.');
         }
 
         const arrayBuffer = await response.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
-        // S3에 음성 파일 저장
-        const fileName = `${projectId}/voice/voice.mp3`;
-        await s3Client.send(new PutObjectCommand({
-            Bucket: process.env.AWS_BUCKET_NAME!,
-            Key: fileName,
-            Body: buffer,
-            ContentType: 'audio/mpeg'
-        }));
+        // 프로젝트별 디렉토리 생성
+        const projectDir = path.join(OUTPUT_DIR, projectId, 'audio');
+        await mkdir(projectDir, { recursive: true });
 
-        // S3 URL 생성
-        const baseUrl = process.env.CLOUDFRONT_URL
-            ? `https://${process.env.CLOUDFRONT_URL}`
-            : `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com`;
+        // 음성 파일 저장
+        const fileName = 'voice.mp3';
+        const filePath = path.join(projectDir, fileName);
+        await writeFile(filePath, buffer);
 
-        // URL에 타임스탬프 추가하여 캐싱 방지
-        const timestamp = Date.now();
-        const audioUrl = `${baseUrl}/${fileName}?t=${timestamp}`;
-        return NextResponse.json({ audioUrl });
+        // URL 경로 생성 (public 폴더 기준)
+        const audioUrl = `/outputs/${projectId}/audio/${fileName}`;
+
+        return NextResponse.json({
+            audioUrl,
+            duration: buffer.length / 32000, // 대략적인 오디오 길이 계산 (초 단위)
+        });
 
     } catch (error) {
-        console.error('Voice generation error:', error);
+        console.error('음성 생성 오류:', error);
         return NextResponse.json(
-            { error: 'An error occurred while generating the voice.' },
+            { error: '음성 생성 중 오류가 발생했습니다.' },
             { status: 500 }
         );
     }
