@@ -1,13 +1,10 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from .models import Subtitle, VideoRequest
-import os
-import requests
-import boto3
-import moviepy.editor as mp
-from dotenv import load_dotenv
+from fastapi.staticfiles import StaticFiles
 
-load_dotenv()
+from .core.config import UPLOAD_DIR
+from .models.video import VideoRequest
+from .services.video_generator import VideoGenerator
 
 app = FastAPI()
 
@@ -20,18 +17,34 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# S3 클라이언트 설정
-s3 = boto3.client(
-    "s3",
-    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-    region_name=os.getenv("AWS_REGION")
-)
+# 정적 파일 제공을 위한 디렉토리 설정
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+
 
 @app.post("/generate-video")
 async def generate_video(request: VideoRequest):
+    """비디오 생성 엔드포인트"""
     try:
-        # ... 기존 코드 유지 ...
-        pass
+        generator = VideoGenerator(request)
+        return generator.generate()
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) 
+        print(f"Error in generate_video: {str(e)}")
+        import traceback
+
+        print(traceback.format_exc())
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/health")
+async def health_check():
+    """헬스 체크 엔드포인트"""
+    return {"status": "ok"}
+
+
+def run_server():
+    """Poetry 스크립트를 위한 서버 실행 함수"""
+    import uvicorn
+
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8001, reload=True)

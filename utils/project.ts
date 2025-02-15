@@ -1,17 +1,10 @@
-export function generateProjectId(): string {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
+export function generateProjectId(projectId: string, topic: string): string {
+    // 프로젝트의 고유 ID를 사용하여 출력 폴더명 생성
+    const shortId = projectId.slice(0, 8); // UUID의 앞 8자리만 사용
+    const sanitizedTopic = topic
+        .replace(/[^a-zA-Z0-9가-힣]/g, '-') // 특수문자를 하이픈으로 변경
+        .replace(/-+/g, '-') // 연속된 하이픈을 하나로
+        .replace(/^-|-$/g, ''); // 시작과 끝의 하이픈 제거
 
-    // localStorage에서 오늘 날짜의 마지막 프로젝트 번호를 가져옴
-    const today = `${year}${month}${day}`;
-    const lastProjectNum = localStorage.getItem(`lastProjectNum_${today}`);
-    const nextNum = lastProjectNum ? Number(lastProjectNum) + 1 : 1;
-
-    // 새로운 번호를 저장
-    localStorage.setItem(`lastProjectNum_${today}`, String(nextNum));
-
-    // YYYYMMDD-XX 형식으로 반환
-    return `${today}-${String(nextNum).padStart(2, '0')}`;
+    return `${sanitizedTopic}-${shortId}`;
 } 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -10,10 +10,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { IVoiceOption, ISubtitleGroup } from '@/types';
+import { IVoiceOption, ISubtitleGroup, IProject } from '@/types';
 import SubtitleGenerator from './SubtitleGenerator';
 import { generateProjectId } from '@/utils/project';
 import PromptGenerator from './PromptGenerator';
+import { useProjectStore } from '@/store/project';
 
 // 음성 옵션 데이터 업데이트
 const VOICE_OPTIONS: IVoiceOption[] = [
@@ -45,9 +46,13 @@ const VOICE_OPTIONS: IVoiceOption[] = [
 
 interface VoiceGeneratorProps {
   script: string;
+  topic: string;
 }
 
-export default function VoiceGenerator({ script }: VoiceGeneratorProps) {
+export default function VoiceGenerator({ script, topic }: VoiceGeneratorProps) {
+  const { getCurrentProject, updateCurrentProject, isLoading: storeLoading, error: storeError, clearError } = useProjectStore();
+  const [currentProject, setCurrentProject] = useState<IProject | undefined>();
+
   const [selectedVoice, setSelectedVoice] = useState<string>(VOICE_OPTIONS[0]?.id || '');
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -56,60 +61,142 @@ export default function VoiceGenerator({ script }: VoiceGeneratorProps) {
   const [selectedAudioUrl, setSelectedAudioUrl] = useState<string>('');
   const [subtitles, setSubtitles] = useState<ISubtitleGroup[]>([]);
 
+  // 에러 상태 초기화
+  useEffect(() => {
+    if (storeError) {
+      setError(storeError);
+      clearError();
+    }
+  }, [storeError, clearError]);
+
+  // 현재 프로젝트 데이터 로드 및 실시간 업데이트
+  useEffect(() => {
+    const loadProject = async () => {
+      try {
+        const project = await getCurrentProject();
+        if (!project) {
+          console.warn('No project found');
+          return;
+        }
+        
+        console.log('Loaded project:', project);
+        setCurrentProject(project);
+        
+        // 프로젝트의 음성 데이터가 있는 경우 상태 복원
+        if (project.voice?.url) {
+          const audioData = {
+            url: project.voice.url,
+            timestamp: project.voice.timestamp || Date.now(),
+            projectId: project.voice.projectId || project.id
+          };
+          
+          setSelectedAudioUrl(audioData.url);
+          setGeneratedAudios([audioData]);
+          
+          if (project.subtitles?.length > 0) {
+            setSubtitles(project.subtitles);
+          }
+        }
+      } catch (err) {
+        console.error('Error loading project:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load project data');
+      }
+    };
+    
+    loadProject();
+    
+    // 30초마다 프로젝트 데이터 자동 갱신
+    const intervalId = setInterval(loadProject, 30000);
+    return () => clearInterval(intervalId);
+  }, [getCurrentProject]);
+
   const generateVoice = async () => {
     if (!selectedVoice) {
-      setError('Please select a voice.');
-      return;
+        setError('Please select a voice.');
+        return;
+    }
+
+    if (!currentProject?.id) {
+        setError('No active project.');
+        return;
+    }
+
+    if (!script) {
+        setError('No script available.');
+        return;
     }
 
     try {
-      setIsLoading(true);
-      setError('');
-      setProgress(0);
-      
-      const projectId = generateProjectId();
-      
-      const progressInterval = setInterval(() => {
-        setProgress(prev => Math.min(prev + 10, 90));
-      }, 500);
+        setIsLoading(true);
+        setError('');
+        setProgress(0);
+        
+        console.log('🎙️ Starting voice generation:', {
+            projectId: currentProject.id,
+            voiceId: selectedVoice,
+            scriptLength: script.length
+        });
+        
+        const progressInterval = setInterval(() => {
+            setProgress(prev => Math.min(prev + 10, 90));
+        }, 500);
 
-      const response = await fetch('/api/generate-voice', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text: script,
-          voiceId: selectedVoice,
-          projectId
-        }),
-      });
+        const response = await fetch('/api/generate-voice', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                text: script,
+                voiceId: selectedVoice,
+                projectId: currentProject.id
+            }),
+        });
 
-      clearInterval(progressInterval);
-      setProgress(100);
+        clearInterval(progressInterval);
+        setProgress(100);
 
-      const data = await response.json();
-      console.log('Voice generation response:', data);  // 디버깅용
+        const data = await response.json();
+        console.log('🔄 Voice generation response:', data);
 
-      if (data.error) {
-        throw new Error(data.error);
-      }
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to generate voice');
+        }
 
-      // 새로운 오디오를 목록에 추가
-      const newAudio = {
-        url: data.audioUrl,
-        timestamp: Date.now(),
-        projectId
-      };
-      console.log('Adding new audio:', newAudio);  // 디버깅용
-      setGeneratedAudios(prev => [...prev, newAudio]);
-      setSelectedAudioUrl(data.audioUrl);
+        const newAudio = {
+            url: data.audioUrl,
+            timestamp: Date.now(),
+            projectId: currentProject.id
+        };
+
+        console.log('🎵 Setting new audio:', newAudio);
+
+        setGeneratedAudios([newAudio]);
+        setSelectedAudioUrl(data.audioUrl);
+
+        // 프로젝트 상태 업데이트 및 저장
+        try {
+            console.log('💾 Updating project with new audio');
+            await updateCurrentProject({
+                voice: newAudio,
+                currentStep: 2,
+                updatedAt: new Date()
+            });
+            
+            // 업데이트 후 프로젝트 데이터 다시 로드
+            const updatedProject = await getCurrentProject();
+            console.log('✅ Project updated:', updatedProject);
+            setCurrentProject(updatedProject);
+        } catch (updateErr) {
+            console.error('❌ Failed to update project:', updateErr);
+            setError('Failed to save voice data');
+        }
 
     } catch (err) {
-      console.error('Voice generation error:', err);
-      setError('An error occurred while generating the voice.');
+        console.error('❌ Voice generation error:', err);
+        setError(err instanceof Error ? err.message : 'An error occurred while generating the voice.');
     } finally {
-      setIsLoading(false);
+        setIsLoading(false);
     }
   };
 
@@ -120,7 +207,7 @@ export default function VoiceGenerator({ script }: VoiceGeneratorProps) {
         <Select
           value={selectedVoice}
           onValueChange={setSelectedVoice}
-          disabled={isLoading}
+          disabled={isLoading || storeLoading}
         >
           <SelectTrigger className="w-full text-left justify-start">
             <SelectValue placeholder="Select a voice" />
@@ -140,12 +227,12 @@ export default function VoiceGenerator({ script }: VoiceGeneratorProps) {
 
       <Button
         onClick={generateVoice}
-        disabled={isLoading || !selectedVoice}
+        disabled={isLoading || storeLoading || !selectedVoice}
       >
-        {isLoading ? 'Generating Voice...' : 'Generate Voice'}
+        {isLoading || storeLoading ? 'Generating Voice...' : 'Generate Voice'}
       </Button>
 
-      {isLoading && (
+      {(isLoading || storeLoading) && (
         <div className="space-y-2">
           <Progress value={progress} />
           <p className="text-sm text-gray-500">Generating voice...</p>
@@ -195,18 +282,10 @@ export default function VoiceGenerator({ script }: VoiceGeneratorProps) {
       )}
 
       {selectedAudioUrl && (
-        <>
-          <SubtitleGenerator 
-            audioUrl={selectedAudioUrl} 
-            onSubtitlesGenerated={setSubtitles}
-          />
-          {subtitles.length > 0 && (
-            <PromptGenerator 
-              subtitles={subtitles} 
-              audioUrl={selectedAudioUrl}
-            />
-          )}
-        </>
+        <SubtitleGenerator
+          audioUrl={selectedAudioUrl}
+          onSubtitlesGenerated={setSubtitles}
+        />
       )}
     </div>
   );

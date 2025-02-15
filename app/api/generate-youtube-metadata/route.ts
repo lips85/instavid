@@ -12,7 +12,7 @@ export async function POST(req: Request) {
 
         // Title 생성
         const titleResponse = await openai.chat.completions.create({
-            model: 'gpt-4',
+            model: 'gpt-4o-mini-2024-07-18',
             messages: [
                 {
                     role: 'system',

@@ -1,21 +1,33 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ISubtitleGroup, IImagePrompt } from '@/types';
 import ImageGenerator from '@/components/ImageGenerator';
+import { useProjectStore } from '@/store/project';
 
 interface PromptGeneratorProps {
   subtitles: ISubtitleGroup[];
   audioUrl: string;
+  topic: string;
 }
 
-export default function PromptGenerator({ subtitles, audioUrl }: PromptGeneratorProps) {
-  const [prompts, setPrompts] = useState<IImagePrompt[]>([]);
+export default function PromptGenerator({ subtitles, audioUrl, topic }: PromptGeneratorProps) {
+  const { getCurrentProject, updateCurrentProject } = useProjectStore();
+  const currentProject = getCurrentProject();
+
+  const [prompts, setPrompts] = useState<IImagePrompt[]>(currentProject?.imagePrompts || []);
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState('');
+
+  // 현재 프로젝트의 프롬프트 데이터 복원
+  useEffect(() => {
+    if (currentProject?.imagePrompts) {
+      setPrompts(currentProject.imagePrompts);
+    }
+  }, [currentProject]);
 
   const generatePrompts = async () => {
     try {
@@ -49,6 +61,13 @@ export default function PromptGenerator({ subtitles, audioUrl }: PromptGenerator
       }
 
       setPrompts(data.prompts);
+
+      // 프로젝트 상태 업데이트
+      updateCurrentProject({
+        imagePrompts: data.prompts,
+        currentStep: 4
+      });
+
     } catch (err) {
       console.error('Prompt generation error:', err);
       setError('An error occurred while generating image prompts.');
@@ -107,6 +126,7 @@ export default function PromptGenerator({ subtitles, audioUrl }: PromptGenerator
             prompts={prompts} 
             audioUrl={audioUrl}
             subtitles={subtitles}
+            topic={topic}
           />
         </>
       )}

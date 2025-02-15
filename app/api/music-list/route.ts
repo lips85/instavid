@@ -1,54 +1,59 @@
 import { NextResponse } from 'next/server';
-import { readdir } from 'fs/promises';
-import path from 'path';
+import { db } from '@/db';
+import { projects } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 
-interface IMusicInfo {
-    fileName: string;
-    displayName: string;
-    url: string;
-}
-
-// 음악 파일 표시 이름 매핑
-const MUSIC_DISPLAY_NAMES: Record<string, string> = {
-    'vlog': '밝고 경쾌한 브이로그 배경음악',
-    'alone': '감성적인 피아노 솔로'
-};
-
-// public 폴더 내의 음악 디렉토리 경로
-const MUSIC_DIR = path.join(process.cwd(), 'public', 'music');
+// Available background music list
+const AVAILABLE_MUSIC = ['vlog', 'alone'];
 
 export async function GET() {
-    try {
-        // 디렉토리가 없는 경우 빈 배열 반환
-        try {
-            await readdir(MUSIC_DIR);
-        } catch {
-            return NextResponse.json({ musicList: [] });
-        }
+  try {
+    const musicList = AVAILABLE_MUSIC.map(name => ({
+      name,
+      url: `/music/${name}.mp3`
+    }));
 
-        // 디렉토리 내의 모든 파일 읽기
-        const files = await readdir(MUSIC_DIR);
+    return NextResponse.json({ musicList });
+  } catch (error) {
+    console.error('Error fetching music list:', error);
+    return NextResponse.json({ error: 'Failed to fetch music list' }, { status: 500 });
+  }
+}
 
-        // MP3 파일만 필터링하고 정보 추출
-        const musicList: IMusicInfo[] = files
-            .filter(file => file.endsWith('.mp3'))
-            .map(file => {
-                const fileName = file.replace('.mp3', '');
-                return {
-                    fileName,
-                    displayName: MUSIC_DISPLAY_NAMES[fileName] || fileName,
-                    url: `/music/${file}`
-                };
-            })
-            .sort((a, b) => a.displayName.localeCompare(b.displayName));
+export async function POST(request: Request) {
+  try {
+    const { projectId, musicName, volume = 1.0 } = await request.json();
 
-        return NextResponse.json({ musicList });
-
-    } catch (error) {
-        console.error('음악 목록 조회 오류:', error);
-        return NextResponse.json(
-            { error: '음악 목록을 가져오는데 실패했습니다.' },
-            { status: 500 }
-        );
+    if (!projectId || !musicName) {
+      return NextResponse.json(
+        { error: 'Project ID and music name are required' },
+        { status: 400 }
+      );
     }
+
+    if (!AVAILABLE_MUSIC.includes(musicName)) {
+      return NextResponse.json(
+        { error: 'Invalid music selection' },
+        { status: 400 }
+      );
+    }
+
+    await db.update(projects)
+      .set({
+        backgroundMusic: {
+          name: musicName,
+          volume
+        },
+        updatedAt: new Date()
+      })
+      .where(eq(projects.id, projectId));
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error updating background music:', error);
+    return NextResponse.json(
+      { error: 'Failed to update background music' },
+      { status: 500 }
+    );
+  }
 } 

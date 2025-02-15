@@ -6,6 +6,7 @@ import fs from 'fs/promises';
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
+    
 });
 
 // public 폴더 내에 outputs 디렉토리 사용

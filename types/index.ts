@@ -63,11 +63,18 @@ export interface IImagePromptResponse {
 }
 
 export interface IVideoGenerationRequest {
-    images: string[];
-    audio: string;
-    subtitles: ISubtitleGroup[];
-    backgroundMusic: string;
     projectId: string;
+    images: Array<{
+        url: string;
+        index: number;
+    }>;
+    audio: string;
+    subtitles: Array<{
+        text: string;
+        start: number;
+        end: number;
+        index: number;
+    }>;
 }
 
 export interface IVideoGenerationResponse {
@@ -82,4 +89,52 @@ export interface IYoutubeMetadata {
 
 export interface IYoutubeMetadataRequest {
     script: string;
+}
+
+export interface IProject {
+    id: string;
+    topic: string;
+    script?: string;
+    voice?: {
+        url: string;
+        timestamp: number;
+        projectId: string;
+    };
+    subtitles?: Array<{
+        text: string;
+        start: number;
+        end: number;
+        index: number;
+    }>;
+    imagePrompts?: Array<{
+        index: number;
+        prompt: string;
+        negativePrompt: string;
+        timestamp: string;
+    }>;
+    images?: Array<{
+        url: string;
+        index: number;
+    }>;
+    backgroundMusic?: {
+        name: string;
+        volume: number;
+    };
+    video?: {
+        url: string;
+        youtubeMetadata?: {
+            title: string;
+            description: string;
+        };
+    };
+    currentStep: number;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+export interface IProjectProgress extends IProject {}
+
+export interface IProjectStore {
+    projects: IProjectProgress[];
+    currentProjectId: string | null;
 } 

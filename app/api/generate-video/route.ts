@@ -1,39 +1,22 @@
 import { NextResponse } from 'next/server';
 import { IVideoGenerationRequest } from '@/types';
 
-const FASTAPI_URL = process.env.FASTAPI_URL || 'http://localhost:8001';
 const MAX_RETRIES = 3;
 const INITIAL_DELAY = 1000;
 
 // 지연 함수
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-// FastAPI 서버 상태 확인
-async function checkFastAPIServer() {
-    try {
-        const response = await fetch(`${FASTAPI_URL}/health`);
-        return response.ok;
-    } catch {
-        return false;
-    }
-}
-
 export async function POST(req: Request) {
     try {
         const body = await req.json() as IVideoGenerationRequest;
-
-        // FastAPI 서버 상태 확인
-        const isServerRunning = await checkFastAPIServer();
-        if (!isServerRunning) {
-            throw new Error('FastAPI 서버가 실행되지 않았습니다. 서버를 시작해주세요.');
-        }
-
         console.log('비디오 생성 요청:', body);
 
         let lastError;
         for (let i = 0; i < MAX_RETRIES; i++) {
             try {
-                const response = await fetch(`${FASTAPI_URL}/generate-video`, {
+                // 프록시 라우트를 통해 FastAPI 서버 호출
+                const response = await fetch('/api/python/generate-video', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

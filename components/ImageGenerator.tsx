@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { IImagePrompt, ISubtitleGroup } from '@/types';
@@ -8,20 +8,32 @@ import Image from 'next/image';
 import { generateProjectId } from '@/utils/project';
 import MusicSelector from './MusicSelector';
 import VideoEditor from './VideoEditor';
+import { useProjectStore } from '@/store/project';
 
 interface ImageGeneratorProps {
     prompts: IImagePrompt[];
     audioUrl?: string;
     subtitles?: ISubtitleGroup[];
+    topic: string;
 }
 
-export default function ImageGenerator({ prompts, audioUrl, subtitles }: ImageGeneratorProps) {
-    const [images, setImages] = useState<Array<{ url: string; index: number }>>([]);
+export default function ImageGenerator({ prompts, audioUrl, subtitles, topic }: ImageGeneratorProps) {
+    const { getCurrentProject, updateCurrentProject } = useProjectStore();
+    const currentProject = getCurrentProject();
+
+    const [images, setImages] = useState<Array<{ url: string; index: number }>>(currentProject?.images || []);
     const [isLoading, setIsLoading] = useState(false);
     const [progress, setProgress] = useState(0);
     const [error, setError] = useState('');
     const [selectedBackgroundMusic, setSelectedBackgroundMusic] = useState<string>('');
-    const [projectId] = useState(() => generateProjectId());
+    const [projectId] = useState(() => generateProjectId(topic));
+
+    // 현재 프로젝트의 이미지 데이터 복원
+    useEffect(() => {
+        if (currentProject?.images) {
+            setImages(currentProject.images);
+        }
+    }, [currentProject]);
 
     const generateImages = async () => {
         try {
@@ -64,7 +76,14 @@ export default function ImageGenerator({ prompts, audioUrl, subtitles }: ImageGe
 
             const generatedImages = await Promise.all(imagePromises);
             console.log('Generated images:', generatedImages);
-            setImages(generatedImages.sort((a, b) => a.index - b.index));
+            const sortedImages = generatedImages.sort((a, b) => a.index - b.index);
+            setImages(sortedImages);
+
+            // 프로젝트 상태 업데이트
+            updateCurrentProject({
+                images: sortedImages,
+                currentStep: 5
+            });
 
         } catch (err) {
             console.error('Image generation error:', err);
@@ -134,6 +153,7 @@ export default function ImageGenerator({ prompts, audioUrl, subtitles }: ImageGe
                             subtitles={subtitles}
                             backgroundMusicUrl={selectedBackgroundMusic}
                             projectId={projectId}
+                            script={topic}
                         />
                     )}
                 </>
